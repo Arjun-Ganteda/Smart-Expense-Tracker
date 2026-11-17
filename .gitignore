@@ -1,0 +1,13 @@
+# Database
+expenses.db
+
+# Python temporary files
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables
+.env
