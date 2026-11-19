@@ -2,7 +2,7 @@ import re
 from flask import Blueprint, request, jsonify
 from supabase import create_client
 
-from config import SUPABASE_URL, SUPABASE_KEY
+from .config import SUPABASE_URL, SUPABASE_KEY
 
 
 auth_api = Blueprint(

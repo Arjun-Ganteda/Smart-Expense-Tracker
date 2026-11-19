@@ -3,3 +3,8 @@ supabase
 pandas
 plotly
 bcrypt
+flask
+flask-cors
+requests
+gunicorn
+Flask

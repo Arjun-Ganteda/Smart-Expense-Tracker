@@ -785,4 +785,82 @@ elif page == "Add Transaction":
 
         description = st.text_input("Description")
 
-        
+        transaction_date = st.date_input(
+            "Transaction Date",
+            value=date.today(),
+        )
+
+        submitted = st.form_submit_button("Save Transaction")
+
+    if submitted:
+        if amount <= 0:
+            st.error("Amount must be greater than zero.")
+        else:
+            try:
+                add_transaction(
+                    client,
+                    transaction_type,
+                    amount,
+                    category,
+                    description,
+                    transaction_date.isoformat(),
+                    st.session_state.user_id,
+                )
+
+                st.success("Transaction added successfully!")
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"Could not save transaction: {e}")
+
+
+# =====================================================
+#                 TRANSACTION HISTORY
+# =====================================================
+
+elif page == "Transaction History":
+
+    st.title("📜 Transaction History")
+
+    try:
+        df = get_data()
+
+        if df.empty:
+            st.info("No transactions found.")
+
+        else:
+            df["Date"] = pd.to_datetime(df["Date"])
+
+            st.dataframe(
+                df.drop(columns=["ID"]),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+            st.divider()
+            st.subheader("Delete Transaction")
+
+            transaction_options = {
+                f'{row["Date"].strftime("%Y-%m-%d")} | '
+                f'{row["Type"]} | ₹{row["Amount"]:,.2f} | '
+                f'{row["Category"]}': row["ID"]
+                for _, row in df.iterrows()
+            }
+
+            selected_transaction = st.selectbox(
+                "Select transaction",
+                list(transaction_options.keys()),
+            )
+
+            if st.button("Delete Selected Transaction"):
+                delete_transaction(
+                    client,
+                    transaction_options[selected_transaction],
+                    st.session_state.user_id,
+                )
+
+                st.success("Transaction deleted successfully!")
+                st.rerun()
+
+    except Exception as e:
+        st.error(f"Could not load transaction history: {e}")

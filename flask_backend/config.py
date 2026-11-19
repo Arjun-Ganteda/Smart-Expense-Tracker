@@ -1,41 +1,35 @@
+import os
 import tomllib
 from pathlib import Path
 
+SECRETS_PATH = (
+    Path(__file__).resolve().parents[1]
+    / ".streamlit"
+    / "secrets.toml"
+)
 
-# Locate the main project directory
-BASE_DIR = Path(__file__).resolve().parents[1]
+secrets = {}
 
-# Locate Streamlit secrets file
-SECRETS_FILE = BASE_DIR / ".streamlit" / "secrets.toml"
-
-
-def load_settings():
-
-    if not SECRETS_FILE.exists():
-        raise FileNotFoundError(
-            "Supabase secrets.toml file not found."
-        )
-
-    with open(SECRETS_FILE, "rb") as file:
+if SECRETS_PATH.exists():
+    with open(SECRETS_PATH, "rb") as file:
         secrets = tomllib.load(file)
 
-    required_keys = [
-        "SUPABASE_URL",
-        "SUPABASE_KEY",
-        "SUPABASE_SECRET_KEY"
-    ]
+SUPABASE_URL = (
+    os.getenv("SUPABASE_URL")
+    or secrets.get("SUPABASE_URL")
+)
 
-    for key in required_keys:
-        if not secrets.get(key):
-            raise ValueError(
-                f"Missing configuration: {key}"
-            )
+SUPABASE_KEY = (
+    os.getenv("SUPABASE_KEY")
+    or secrets.get("SUPABASE_KEY")
+)
 
-    return secrets
+SUPABASE_SECRET_KEY = (
+    os.getenv("SUPABASE_SECRET_KEY")
+    or secrets.get("SUPABASE_SECRET_KEY")
+)
 
-
-settings = load_settings()
-
-SUPABASE_URL = settings["SUPABASE_URL"]
-SUPABASE_KEY = settings["SUPABASE_KEY"]
-SUPABASE_SECRET_KEY = settings["SUPABASE_SECRET_KEY"]
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError(
+        "Missing Supabase URL or publishable key."
+ )

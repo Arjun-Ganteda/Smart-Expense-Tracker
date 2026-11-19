@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 
-from routes import auth_api
+from .routes import auth_api
 
 
 app = Flask(__name__)
@@ -49,4 +49,4 @@ if __name__ == "__main__":
         host="127.0.0.1",
         port=5000,
         debug=True
-    )
+    )  
