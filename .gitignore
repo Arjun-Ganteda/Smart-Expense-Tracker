@@ -1,13 +1,16 @@
-# Database
-expenses.db
-
-# Python temporary files
 __pycache__/
-*.pyc
+*.py[cod]
 
-# Virtual environment
 .venv/
 venv/
 
-# Environment variables
 .env
+.env.*
+
+.streamlit/secrets.toml
+
+*.db
+*.sqlite
+*.sqlite3
+
+.DS_Store
