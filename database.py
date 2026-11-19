@@ -1,111 +1,61 @@
-import sqlite3
-
-DB_NAME = "expenses.db"
-
-
-def create_table():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transaction_type TEXT NOT NULL,
-            amount REAL NOT NULL,
-            category TEXT NOT NULL,
-            description TEXT,
-            date TEXT NOT NULL,
-            user_id INTEGER
+def fetch_transactions(client, user_id):
+    result = (
+        client.table("transactions")
+        .select("id, transaction_type, amount, category, description, date")
+        .eq("user_id", user_id)
+        .order("date", desc=True)
+        .execute()
+    )
+    rows = result.data or []
+    return [
+        (
+            row["id"],
+            row["transaction_type"],
+            float(row["amount"]),
+            row["category"],
+            row.get("description") or "",
+            row["date"],
         )
-    """)
-
-    cursor.execute("PRAGMA table_info(transactions)")
-    columns = [column[1] for column in cursor.fetchall()]
-
-    if "user_id" not in columns:
-        cursor.execute(
-            "ALTER TABLE transactions ADD COLUMN user_id INTEGER"
-        )
-
-    conn.commit()
-    conn.close()
+        for row in rows
+    ]
 
 
-def add_transaction(transaction_type, amount, category,
-                    description, date, user_id):
-
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        INSERT INTO transactions
-        (transaction_type, amount, category, description, date, user_id)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        transaction_type, amount, category,
-        description, date, user_id
-    ))
-
-    conn.commit()
-    conn.close()
+def add_transaction(client, transaction_type, amount, category,
+                    description, transaction_date, user_id):
+    client.table("transactions").insert({
+        "transaction_type": transaction_type,
+        "amount": float(amount),
+        "category": category,
+        "description": description,
+        "date": transaction_date,
+        "user_id": user_id,
+    }).execute()
 
 
-def fetch_transactions(user_id):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, transaction_type, amount,
-               category, description, date
-        FROM transactions
-        WHERE user_id = ?
-        ORDER BY date DESC
-    """, (user_id,))
-
-    data = cursor.fetchall()
-    conn.close()
-
-    return data
+def delete_transaction(client, transaction_id, user_id):
+    client.table("transactions").delete().eq(
+        "id", transaction_id
+    ).eq("user_id", user_id).execute()
 
 
-def delete_transaction(transaction_id, user_id):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+def get_all_users(client):
+    result = (
+        client.table("profiles")
+        .select("id, username, role, status, created_at")
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return result.data or []
 
-    cursor.execute("""
-        DELETE FROM transactions
-        WHERE id = ? AND user_id = ?
-    """, (transaction_id, user_id))
 
-    conn.commit()
-    conn.close()
+def get_total_users(client):
+    result = client.table("profiles").select("id", count="exact").execute()
+    return result.count or 0
 
-def create_user_table():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-
-def add_user_id_column():
-    conn = sqlite3.connect("expenses.db")
-    cursor = conn.cursor()
-
-    cursor.execute("PRAGMA table_info(transactions)")
-    columns = [column[1] for column in cursor.fetchall()]
-
-    if "user_id" not in columns:
-        cursor.execute(
-            "ALTER TABLE transactions ADD COLUMN user_id INTEGER"
-        )
-
-    conn.commit()
-    conn.close()
+def set_user_status(client, target_user_id, new_status):
+    result = client.rpc("set_user_status", {
+        "target_user_id": target_user_id,
+        "new_status": new_status,
+    }).execute()
+    return bool(result.data)
